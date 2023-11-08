@@ -1,51 +1,55 @@
-# Copyright (c) Streamlit Inc. (2018-2022) Snowflake Inc. (2022)
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-
 import streamlit as st
-from streamlit.logger import get_logger
+import pandas as pd
+import joblib
 
-LOGGER = get_logger(__name__)
+# Function to load a model from a pickle file
+def load_model(model_file):
+    with open(model_file, 'rb') as f:
+        model = joblib.load(f)
+    return model
 
+# Streamlit UI elements
+st.title('Model Prediction App')
 
-def run():
-    st.set_page_config(
-        page_title="Hello",
-        page_icon="👋",
-    )
+# Load sample data from a CSV file
+sample_data = pd.read_csv('Raw spectral 1.csv')
 
-    st.write("# Welcome to Streamlit! 👋")
+# Print out the raw spectral CSV where the first row contains wavelength and the second row contains spectral value
+st.write('Raw spectral CSV:')
+st.table(sample_data)
 
-    st.sidebar.success("Select a demo above.")
+# Load the UMAP model from the joblib file
+umap_model = load_model('umap_model_10.joblib').transform(sample_data)
 
-    st.markdown(
-        """
-        Streamlit is an open-source app framework built specifically for
-        Machine Learning and Data Science projects.
-        **👈 Select a demo from the sidebar** to see some examples
-        of what Streamlit can do!
-        ### Want to learn more?
-        - Check out [streamlit.io](https://streamlit.io)
-        - Jump into our [documentation](https://docs.streamlit.io)
-        - Ask a question in our [community
-          forums](https://discuss.streamlit.io)
-        ### See more complex demos
-        - Use a neural net to [analyze the Udacity Self-driving Car Image
-          Dataset](https://github.com/streamlit/demo-self-driving)
-        - Explore a [New York City rideshare dataset](https://github.com/streamlit/demo-uber-nyc-pickups)
-    """
-    )
+# Button to trigger prediction for both models
+if st.button('Predict'):
+    # Load the Linear Regression model and make a prediction
+    linear_reg_model = load_model('linear_reg_model_10.joblib')
+    linear_reg_prediction = linear_reg_model.predict(sample_data)
 
+    # Load the Decision Tree model and make a prediction
+    decision_tree_model = load_model('decision_tree_model_10.joblib')
+    decision_tree_prediction = decision_tree_model.predict(sample_data)
 
-if __name__ == "__main__":
-    run()
+    # Load the Linear Regression model with UMAP and make prediction
+    linear_reg_model_umap = load_model('linear_reg_model_umap_10.joblib')
+    linear_reg_umap_pred = linear_reg_model_umap.predict(umap_model)
+
+    # Load the Decision Tree model with UMAP and make prediction
+    decision_tree_model_umap = load_model('decision_tree_model_umap_10.joblib')
+    decision_tree_umap_pred = decision_tree_model_umap.predict(umap_model)
+
+    # Display predictions from both models in a larger and bold format
+    st.markdown('<font size="6"><b>Predictions:</b></font>', unsafe_allow_html=True)
+
+    st.markdown('**Linear Regression Model:**')
+    st.markdown(f'<font size="5"><b>{linear_reg_prediction[0]} g/dL</b></font>', unsafe_allow_html=True)
+
+    st.markdown('**Decision Tree Model:**')
+    st.markdown(f'<font size="5"><b>{decision_tree_prediction[0]} g/dL</b></font>', unsafe_allow_html=True)
+
+    st.markdown('**Linear Regression Model with UMAP:**')
+    st.markdown(f'<font size="5"><b>{linear_reg_umap_pred[0]:.1f} g/dL</b></font>', unsafe_allow_html=True)
+
+    st.markdown('**Decision Tree Model with UMAP:**')
+    st.markdown(f'<font size="5"><b>{decision_tree_umap_pred[0]} g/dL</b></font>', unsafe_allow_html=True)
